@@ -1,0 +1,27 @@
+#!highlight yaml
+HeatTemplateFormatVersion: '2012-12-12'
+
+Parameters: {}
+
+Mappings: {}
+
+Resources:
+    Foo:
+        Type: OS::Heat::Docker
+        Properties:
+            Image: vieux/goplay
+
+    Bar:
+        Type: OS::Heat::Docker
+        Properties:
+            Image: ubuntu
+            Cmd: ["bash"]
+            Env:
+                - {"Fn::Join": ["=", ["FooIp", {"Fn::GetAtt": ["Foo", "NetworkIp"]}]]}
+                - {"Fn::Join": ["FooPort=", {"Fn::GetAtt": ["Foo", "NetworkTcpPorts"]}]}
+
+Outputs:
+    FooInfo:
+        Value:
+            Fn::GetAtt: [Foo, Info]
+        Description: Inspection of Foo
