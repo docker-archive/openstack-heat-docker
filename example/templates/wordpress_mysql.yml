@@ -6,22 +6,26 @@ Parameters: {}
 Mappings: {}
 
 Resources:
-    Foo:
+    Blog:
         Type: OS::Heat::Docker
         Properties:
-            Image: vieux/goplay
-
-    Bar:
-        Type: OS::Heat::Docker
-        Properties:
-            Image: ubuntu
-            Cmd: ["bash"]
+            Image: samalba/wordpress
             Env:
-                - {"Fn::Join": ["=", ["FooIp", {"Fn::GetAtt": ["Foo", "NetworkIp"]}]]}
-                - {"Fn::Join": ["FooPort=", {"Fn::GetAtt": ["Foo", "NetworkTcpPorts"]}]}
+                - {"Fn::Join": ["=", ["DB_HOSTNAME", {"Fn::GetAtt": ["Database", "NetworkIp"]}]]}
+                - {"Fn::Join": ["=", ["DB_PORT", {"Fn::GetAtt": ["Database", "NetworkTcpPorts"]}]]}
+                - {"Fn::Join": ["=", ["DB_PASSWORD", {"Fn::GetAtt": ["Database", "LogsHead"]}]]}
+
+    Database:
+        Type: OS::Heat::Docker
+        Properties:
+            Image: samalba/mysql
 
 Outputs:
-    FooInfo:
+    BlogURL:
         Value:
-            Fn::GetAtt: [Foo, Info]
-        Description: Inspection of Foo
+            {"Fn::Join": ["",
+                ["http://",
+                {"Fn::GetAtt": ["Blog", "NetworkIp"]}, ":",
+                {"Fn::GetAtt": ["Blog", "NetworkTcpPorts"]}, "/"]
+            ]}
+        Description: Blog URL

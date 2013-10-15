@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
 class Docker(resource.Resource):
 
     properties_schema = {
+        'DockerEndpoint': {
+            'Type': 'String',
+            'Default': None,
+            'Description': _('Docker daemon endpoint (by default the local '
+                             'docker daemon will be used)')
+        },
         'Hostname': {
             'Type': 'String',
             'Default': '',
@@ -47,7 +53,7 @@ class Docker(resource.Resource):
         },
         'AttachStdin': {
             'Type': 'Boolean',
-            'Default': False
+            'Default': False,
         },
         'AttachStdout': {
             'Type': 'Boolean',
@@ -96,8 +102,8 @@ class Docker(resource.Resource):
             'Description': _('Image name')
         },
         'Volumes': {
-            'Type': 'List',
-            'Default': []
+            'Type': 'Map',
+            'Default': {}
         },
         'VolumesFrom': {
             'Type': 'String',
@@ -115,15 +121,25 @@ class Docker(resource.Resource):
         'NetworkIp': _('Container ip address'),
         'NetworkTcpPorts': _('Container TCP ports'),
         'NetworkUdpPorts': _('Container UDP ports'),
+        'Logs': _('Container logs'),
+        'LogsHead': _('Container first logs line'),
+        'LogsTail': _('Container last logs line')
     }
 
     def __init__(self, *args, **kwargs):
         super(Docker, self).__init__(*args, **kwargs)
-        client_class = kwargs.get('client_class', docker.Client)
-        self.client = client_class()
+        self._client_class = kwargs.get('client_class', docker.Client)
+        self._client = self._client_class()
 
-    def _container_networkinfo(self, resource_id):
-        info = self.client.inspect_container(self.resource_id)
+    def get_client(self):
+        client = self._client
+        endpoint = self.properties.get('DockerEndpoint')
+        if endpoint:
+            client = self._client_class(endpoint)
+        return client
+
+    def _container_networkinfo(self, client, resource_id):
+        info = client.inspect_container(self.resource_id)
         networkinfo = info['NetworkSettings']
         tcp = ','.join(networkinfo['PortMapping']['Tcp'].values())
         udp = ','.join(networkinfo['PortMapping']['Udp'].values())
@@ -134,17 +150,25 @@ class Docker(resource.Resource):
     def _resolve_attribute(self, name):
         if not self.resource_id:
             return
+        client = self.get_client()
         if name == 'Info':
-            return self.client.inspect_container(self.resource_id)
-        networkinfo = self._container_networkinfo(self.resource_id)
+            return client.inspect_container(self.resource_id)
+        networkinfo = self._container_networkinfo(client, self.resource_id)
         if name == 'NetworkInfo':
             return networkinfo
         if name == 'NetworkIp':
-            return networkinfo['IPAddress']
-        if name == 'NetworkTcpPort':
+            return networkinfo['Gateway']
+        if name == 'NetworkTcpPorts':
             return networkinfo['TcpPorts']
-        if name == 'NetworkUdpPort':
+        if name == 'NetworkUdpPorts':
             return networkinfo['UdpPorts']
+        logs = client.logs(self.resource_id)
+        if name == 'Logs':
+            return logs
+        if name == 'LogsHead':
+            return logs.split('\n')[0]
+        if name == 'LogsTail':
+            return logs.split('\n').pop()
 
     def handle_create(self):
         args = {
@@ -162,16 +186,30 @@ class Docker(resource.Resource):
             'volumes_from': self.properties['VolumesFrom'],
             'privileged': self.properties['Privileged'],
         }
-        result = self.client.create_container(**args)
+        client = self.get_client()
+        result = client.create_container(**args)
         container_id = result['Id']
-        self.client.start(container_id)
+        client.start(container_id)
         self.resource_id_set(container_id)
 
     def handle_delete(self):
         if self.resource_id is None:
             return
-        self.client.kill(self.resource_id)
+        client = self.get_client()
+        client.kill(self.resource_id)
         self.resource_id_set(None)
+
+    def handle_suspend(self):
+        if not self.resource_id:
+            return
+        client = self.get_client()
+        client.stop(self.resource_id)
+
+    def handle_resume(self):
+        if not self.resource_id:
+            return
+        client = self.get_client()
+        self.client.start(self.resource_id)
 
 
 def resource_mapping():
