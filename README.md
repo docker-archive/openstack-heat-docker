@@ -4,7 +4,7 @@ OpenStack Heat + Docker
 How to use it?
 --------------
 
-### 1. Install Heat.
+### 1. Install Heat
 
 I recommend to use
 [DevStack](https://wiki.openstack.org/wiki/Heat/GettingStartedUsingDevstack).
