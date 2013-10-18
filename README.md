@@ -1,5 +1,7 @@
-OpenStack Heat + Docker
-=======================
+Docker plugin for OpenStack Heat
+================================
+
+This plugin enable using Docker containers as resources in a Heat template.
 
 How to use it?
 --------------
