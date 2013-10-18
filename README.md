@@ -4,6 +4,8 @@ OpenStack Heat + Docker
 How to use it?
 --------------
 
+Obviously the step 0 is to make sure you have a recent of Docker running.
+
 ### 1. Install Heat
 
 I recommend to use
@@ -19,6 +21,7 @@ Running the following the following commands will actually install the Docker
 plugin in an existing Heat setup.
 
 ```
+pip install -r openstack-heat-docker/requirements.txt
 git clone git@github.com:dotcloud/openstack-heat-docker.git
 ln -sf $(cd openstack-heat-docker/plugin; pwd) /usr/lib/heat/docker
 ```
