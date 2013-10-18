@@ -15,11 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from __future__ import absolute_import
-
+from heat.engine import resource
 from heat.openstack.common.gettextutils import _
 from heat.openstack.common import log as logging
-from heat.engine import resource
 
 import docker
 
@@ -209,7 +207,7 @@ class Docker(resource.Resource):
         if not self.resource_id:
             return
         client = self.get_client()
-        self.client.start(self.resource_id)
+        client.start(self.resource_id)
 
 
 def resource_mapping():
