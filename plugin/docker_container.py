@@ -203,14 +203,19 @@ class Docker(resource.Resource):
         result = client.create_container(**args)
         container_id = result['Id']
         client.start(container_id)
+        self._wait_logs(client, container_id)
         self.resource_id_set(container_id)
 
     def handle_delete(self):
         if self.resource_id is None:
             return
         client = self.get_client()
-        client.kill(self.resource_id)
-        self.resource_id_set(None)
+        try:
+            client.kill(self.resource_id)
+        except RuntimeError as e:
+            logger.warning(_('Cannot kill the container: %s'), e)
+        finally:
+            self.resource_id_set(None)
 
     def handle_suspend(self):
         if not self.resource_id:
