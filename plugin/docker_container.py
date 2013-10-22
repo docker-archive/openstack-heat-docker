@@ -15,6 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from heat.engine import resource
 from heat.openstack.common.gettextutils import _
 from heat.openstack.common import log as logging
@@ -160,13 +162,26 @@ class Docker(resource.Resource):
             return networkinfo['TcpPorts']
         if name == 'NetworkUdpPorts':
             return networkinfo['UdpPorts']
-        logs = client.logs(self.resource_id)
+        logs = self._wait_logs(client, self.resource_id)
         if name == 'Logs':
             return logs
         if name == 'LogsHead':
             return logs.split('\n')[0]
         if name == 'LogsTail':
             return logs.split('\n').pop()
+
+    def _wait_logs(self, client, container_id, wait=10):
+        # NOTE(samalba): Give maximum 10 seconds to the containers to display
+        # logs, so we assumed it started
+        wait = float(wait)
+        step = 0.3
+        count = 0.0
+        logs = None
+        while not logs and count < (wait / step):
+            logs = client.logs(container_id)
+            time.sleep(step)
+            count += step
+        return logs
 
     def handle_create(self):
         args = {
