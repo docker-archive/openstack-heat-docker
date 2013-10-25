@@ -6,7 +6,7 @@ This plugin enable using Docker containers as resources in a Heat template.
 How to use it?
 --------------
 
-Obviously the step 0 is to make sure you have a recent of Docker running.
+Obviously the step 0 is to make sure you're running a recent version of Docker.
 
 ### 1. Install Heat
 
@@ -106,8 +106,6 @@ b98d764d109d  samalba/mysql:latest      /start_mysqld.sh      2 minutes ago  Up 
 
 In this example, connecting with a web browser on the port 49174 of host will
 show the wordpress install page.
-
-FIXME: INCLUDE SCREENSHOT
 
 The Heat template also generated the Blog URL:
 
